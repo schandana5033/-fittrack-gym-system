@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Gym Members - FitTrack DBMS{% endblock %}
+{% block page_title %}Members Management{% endblock %}
+
+{% block content %}
+<div class="viva-box">
+  <div class="viva-box-title">
+    <i class="fa-solid fa-graduation-cap"></i> DBMS Viva Note: Relational Integrity & Queries
+  </div>
+  <p>
+    This page executes a multi-table SQL query:
+    <code>SELECT m.*, p.plan_name, t.name AS trainer_name FROM members m LEFT JOIN plans p ON m.plan_id = p.plan_id LEFT JOIN trainers t ON m.trainer_id = t.trainer_id</code>.
+    The <code>LEFT JOIN</code> guarantees that members are displayed even if their plan or trainer is <code>NULL</code>.
+    Email is protected by a <code>UNIQUE</code> constraint, and operations are protected against SQL injection using parameterized statements.
+  </p>
+</div>
+
+<div class="card">
+  <div class="card-header-flex">
+    <div>
+      <h2 class="card-title">All Registered Members</h2>
+      <small style="color: var(--text-muted);">Total: {{ members|length }} members registered in MySQL</small>
+    </div>
+    <div style="display: flex; gap: 12px; align-items: center;">
+      <!-- Search Filter Form -->
+      <form method="GET" action="{{ url_for('members_list') }}" style="display: flex; gap: 8px;">
+        <input type="text" name="q" value="{{ search_query }}" placeholder="Search name, email, phone..." class="form-control" style="width: 220px; padding: 6px 12px;">
+        <button type="submit" class="btn btn-secondary btn-sm"><i class="fa-solid fa-magnifying-glass"></i></button>
+        {% if search_query %}
+        <a href="{{ url_for('members_list') }}" class="btn btn-secondary btn-sm" title="Clear Search">&times;</a>
+        {% endif %}
+      </form>
+      <a href="{{ url_for('members_add') }}" class="btn btn-primary">
+        <i class="fa-solid fa-user-plus"></i> Add New Member
+      </a>
+    </div>
+  </div>
+
+  {% if members %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Full Name</th>
+          <th>Email Address</th>
+          <th>Phone</th>
+          <th>Join Date</th>
+          <th>Membership Plan</th>
+          <th>Assigned Trainer</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in members %}
+        <tr>
+          <td><span style="font-weight: 700; color: var(--navy-light);">#{{ m.member_id }}</span></td>
+          <td>
+            <strong>{{ m.name }}</strong>
+          </td>
+          <td>{{ m.email }}</td>
+          <td>{{ m.phone }}</td>
+          <td>{{ m.join_date }}</td>
+          <td>
+            {% if m.plan_name %}
+              <span class="badge badge-plan">{{ m.plan_name }}</span>
+            {% else %}
+              <span style="color: var(--text-muted); font-size: 0.8rem;">None</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if m.trainer_name %}
+              <span class="badge badge-trainer">{{ m.trainer_name }}</span>
+            {% else %}
+              <span style="color: var(--text-muted); font-size: 0.8rem;">Unassigned</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="table-actions" style="justify-content: flex-end;">
+              <!-- Hybrid Profile Button -->
+              <a href="{{ url_for('member_profile', member_id=m.member_id) }}" class="btn btn-secondary btn-sm" title="Hybrid Profile (SQL + NoSQL)">
+                <i class="fa-solid fa-id-badge"></i> Profile
+              </a>
+              <!-- Edit Button -->
+              <a href="{{ url_for('members_edit', member_id=m.member_id) }}" class="btn btn-secondary btn-sm" title="Edit Member">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </a>
+              <!-- Delete Button -->
+              <form method="POST" action="{{ url_for('members_delete', member_id=m.member_id) }}" style="display: inline;" onsubmit="return confirmDelete('member: {{ m.name }}');">
+                <button type="submit" class="btn btn-danger btn-sm" title="Delete Member">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color: var(--text-muted); padding: 20px 0;">No members found matching your criteria.</p>
+  {% endif %}
+</div>
+{% endblock %}

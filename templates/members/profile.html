@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}{{ member.name }} - Member Profile (Hybrid DBMS){% endblock %}
+{% block page_title %}Member 360° Profile{% endblock %}
+
+{% block content %}
+<!-- Viva Concept Callout -->
+<div class="viva-box">
+  <div class="viva-box-title">
+    <i class="fa-solid fa-graduation-cap"></i> DBMS Viva Note: Polyglot Data Integration Pattern
+  </div>
+  <p>
+    This page demonstrates true <strong>Polyglot Persistence</strong>:
+    The core identity, financial subscription, and trainer contract are retrieved from <strong>MySQL</strong> using a 3-table <code>JOIN</code> on <code>members.member_id = %s</code>.
+    Simultaneously, dynamic high-frequency fitness logs are retrieved from <strong>MongoDB</strong> by querying collections:
+    <code>db.workout_logs.find({"member_id": member_id})</code>,
+    <code>db.progress.find({"member_id": member_id})</code>, and
+    <code>db.feedback.find({"member_id": member_id})</code>.
+    The primary key in MySQL serves as the document reference key in MongoDB!
+  </p>
+</div>
+
+<!-- Profile Banner Card (MySQL Core Data) -->
+<div class="profile-header-card">
+  <div class="profile-avatar">
+    {{ member.name[0]|upper }}
+  </div>
+  <div style="flex: 1;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
+      <div>
+        <h2 style="font-size: 1.6rem; font-weight: 700; margin-bottom: 2px;">{{ member.name }}</h2>
+        <div style="font-size: 0.85rem; color: #94a3b8;">Member ID #{{ member.member_id }} &bull; Member since {{ member.join_date }}</div>
+      </div>
+      <div>
+        <a href="{{ url_for('members_edit', member_id=member.member_id) }}" class="btn btn-secondary btn-sm" style="color: #0f172a;">
+          <i class="fa-solid fa-pen"></i> Edit Member
+        </a>
+      </div>
+    </div>
+
+    <div class="profile-meta">
+      <span><i class="fa-solid fa-envelope" style="color: var(--teal-primary);"></i> {{ member.email }}</span>
+      <span><i class="fa-solid fa-phone" style="color: var(--teal-primary);"></i> {{ member.phone }}</span>
+      <span>
+        <i class="fa-solid fa-id-card" style="color: var(--amber-primary);"></i> 
+        Plan: <strong>{{ member.plan_name or 'No Plan Assigned' }}</strong> 
+        {% if member.plan_price %}(₹{{ "%.2f"|format(member.plan_price) }}){% endif %}
+      </span>
+      <span>
+        <i class="fa-solid fa-user-ninja" style="color: var(--teal-primary);"></i> 
+        Trainer: <strong>{{ member.trainer_name or 'Unassigned' }}</strong> 
+        {% if member.trainer_specialization %}({{ member.trainer_specialization }}){% endif %}
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Action Strip -->
+<div style="display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;">
+  <a href="{{ url_for('workouts_add', member_id=member.member_id) }}" class="btn btn-primary btn-sm">
+    <i class="fa-solid fa-dumbbell"></i> Log Workout
+  </a>
+  <a href="{{ url_for('progress_add', member_id=member.member_id) }}" class="btn btn-amber btn-sm">
+    <i class="fa-solid fa-weight-scale"></i> Add Progress Check-in
+  </a>
+  <a href="{{ url_for('feedback_add', member_id=member.member_id) }}" class="btn btn-secondary btn-sm">
+    <i class="fa-solid fa-star"></i> Submit Trainer Review
+  </a>
+</div>
+
+<!-- Section 1: Progress Tracker & Chart.js (MongoDB) -->
+<div class="card">
+  <div class="card-header-flex">
+    <div>
+      <h3 class="card-title"><i class="fa-solid fa-chart-line" style="color: var(--teal-primary);"></i> Weight & Body Composition Progress</h3>
+      <small style="color: var(--text-muted);">Source: MongoDB <code>progress</code> collection</small>
+    </div>
+    <a href="{{ url_for('progress_add', member_id=member.member_id) }}" class="btn btn-secondary btn-sm">
+      <i class="fa-solid fa-plus"></i> New Measurement
+    </a>
+  </div>
+
+  {% if progress_records %}
+    <!-- Chart Container -->
+    <div style="height: 280px; width: 100%; margin-bottom: 24px;">
+      <canvas id="progressChart"></canvas>
+    </div>
+
+    <!-- Progress Table -->
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Weight (kg)</th>
+            <th>Body Fat %</th>
+            <th>Chest (in)</th>
+            <th>Waist (in)</th>
+            <th>Arms (in)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in progress_records %}
+          <tr>
+            <td><strong>{{ p.date }}</strong></td>
+            <td><span class="badge badge-plan">{{ p.weight_kg }} kg</span></td>
+            <td>{{ p.body_fat_pct ~ '%' if p.body_fat_pct else '—' }}</td>
+            <td>{{ p.measurements.chest ~ '"' if p.measurements and p.measurements.chest else '—' }}</td>
+            <td>{{ p.measurements.waist ~ '"' if p.measurements and p.measurements.waist else '—' }}</td>
+            <td>{{ p.measurements.arms ~ '"' if p.measurements and p.measurements.arms else '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p style="color: var(--text-muted); padding: 12px 0;">No progress measurements logged yet for this member.</p>
+  {% endif %}
+</div>
+
+<!-- Section 2: Workout Logs (MongoDB) -->
+<div class="card">
+  <div class="card-header-flex">
+    <div>
+      <h3 class="card-title"><i class="fa-solid fa-fire" style="color: #ef4444;"></i> Workout Session History</h3>
+      <small style="color: var(--text-muted);">Source: MongoDB <code>workout_logs</code> (Embedded exercises array)</small>
+    </div>
+    <a href="{{ url_for('workouts_add', member_id=member.member_id) }}" class="btn btn-secondary btn-sm">
+      <i class="fa-solid fa-plus"></i> Log Workout
+    </a>
+  </div>
+
+  {% if workout_logs %}
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      {% for w in workout_logs %}
+      <div style="border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 16px; background: #fafafa;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <div>
+            <strong>Session Date: {{ w.date }}</strong>
+            {% if w.notes %}
+              <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;"><em>"{{ w.notes }}"</em></div>
+            {% endif %}
+          </div>
+          <form method="POST" action="{{ url_for('workouts_delete', log_id=w._id|string) }}" onsubmit="return confirmDelete('workout session');">
+            <input type="hidden" name="return_url" value="{{ request.path }}">
+            <button type="submit" class="btn btn-danger btn-sm" title="Delete Session">&times;</button>
+          </form>
+        </div>
+
+        <!-- Embedded Exercise Table -->
+        <table class="table" style="background: #ffffff; border-radius: var(--radius-sm);">
+          <thead>
+            <tr style="font-size: 0.8rem;">
+              <th>Exercise</th>
+              <th>Sets</th>
+              <th>Reps</th>
+              <th>Weight (kg)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ex in w.exercises %}
+            <tr>
+              <td><strong>{{ ex.name }}</strong></td>
+              <td>{{ ex.sets }}</td>
+              <td>{{ ex.reps }}</td>
+              <td>{{ ex.weight }} kg</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p style="color: var(--text-muted); padding: 12px 0;">No workout sessions recorded yet.</p>
+  {% endif %}
+</div>
+
+<!-- Section 3: Trainer Feedback (MongoDB) -->
+<div class="card">
+  <div class="card-header-flex">
+    <div>
+      <h3 class="card-title"><i class="fa-solid fa-star" style="color: var(--amber-primary);"></i> Feedback & Reviews Submitted</h3>
+      <small style="color: var(--text-muted);">Source: MongoDB <code>feedback</code> collection</small>
+    </div>
+    <a href="{{ url_for('feedback_add', member_id=member.member_id) }}" class="btn btn-secondary btn-sm">
+      <i class="fa-solid fa-plus"></i> Submit Feedback
+    </a>
+  </div>
+
+  {% if feedback_records %}
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      {% for fb in feedback_records %}
+      <div style="border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 14px; background: #ffffff;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <div>
+            <span class="star-rating">
+              {% for i in range(fb.rating) %}★{% endfor %}{% for i in range(5 - fb.rating) %}<span class="star-rating-empty">☆</span>{% endfor %}
+            </span>
+            <span style="font-size: 0.82rem; font-weight: 600; margin-left: 8px;">Trainer: {{ fb.trainer_name or ('Trainer #' ~ fb.trainer_id) }}</span>
+          </div>
+          <span style="font-size: 0.75rem; color: var(--text-muted);">{{ fb.created_at.strftime('%d %b %Y') if fb.created_at else 'Recent' }}</span>
+        </div>
+        <p style="font-size: 0.88rem; color: #334155;">{{ fb.comment }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p style="color: var(--text-muted); padding: 12px 0;">No feedback submitted by this member.</p>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if progress_chart_data %}
+<script>
+  window.progressChartData = {{ progress_chart_data|tojson }};
+</script>
+{% endif %}
+{% endblock %}

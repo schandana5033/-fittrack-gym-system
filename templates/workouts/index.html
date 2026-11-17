@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Workout Logs - FitTrack DBMS{% endblock %}
+{% block page_title %}Workout Session Logs{% endblock %}
+
+{% block content %}
+<div class="viva-box">
+  <div class="viva-box-title">
+    <i class="fa-solid fa-graduation-cap"></i> DBMS Viva Note: Embedded Arrays in NoSQL
+  </div>
+  <p>
+    Workout sessions are stored in MongoDB's <code>workout_logs</code> collection.
+    Notice the <strong>embedded <code>exercises</code> array</strong> inside each document:
+    <code>{"member_id": 1, "date": "2026-03-01", "exercises": [{"name": "Bench Press", "sets": 4, "reps": 10, "weight": 65}]}</code>.
+    In a purely relational database, this would require 2 tables (e.g. <code>workout_sessions</code> and <code>workout_exercises</code>)
+    joined via foreign keys. MongoDB stores the entire session atomically in one document.
+  </p>
+</div>
+
+<div class="card">
+  <div class="card-header-flex">
+    <div>
+      <h2 class="card-title">Workout Activity History</h2>
+      <small style="color: var(--text-muted);">Total: {{ workouts|length }} session logs recorded</small>
+    </div>
+    <div style="display: flex; gap: 12px; align-items: center;">
+      <!-- Member Filter Dropdown -->
+      <form method="GET" action="{{ url_for('workouts_list') }}" style="display: flex; gap: 8px;">
+        <select name="member_id" class="form-control" style="width: 220px; padding: 6px 10px;" onchange="this.form.submit()">
+          <option value="">-- All Members --</option>
+          {% for m in members %}
+            <option value="{{ m.member_id }}" {% if selected_member_id|string == m.member_id|string %}selected{% endif %}>
+              {{ m.name }}
+            </option>
+          {% endfor %}
+        </select>
+        {% if selected_member_id %}
+          <a href="{{ url_for('workouts_list') }}" class="btn btn-secondary btn-sm" title="Clear Filter">&times;</a>
+        {% endif %}
+      </form>
+
+      <a href="{{ url_for('workouts_add') }}" class="btn btn-primary">
+        <i class="fa-solid fa-plus"></i> Log Workout
+      </a>
+    </div>
+  </div>
+
+  {% if workouts %}
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      {% for w in workouts %}
+      <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 20px; background: #ffffff; box-shadow: var(--shadow-sm);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span class="badge badge-plan" style="font-size: 0.85rem; padding: 4px 10px;">
+                <i class="fa-solid fa-user"></i> {{ w.member_name or ('Member #' ~ w.member_id) }}
+              </span>
+              <strong style="color: var(--navy-dark); font-size: 1rem;">
+                <i class="fa-regular fa-calendar"></i> {{ w.date }}
+              </strong>
+            </div>
+            {% if w.notes %}
+              <div style="margin-top: 6px; font-size: 0.88rem; color: var(--text-muted); font-style: italic;">
+                "{{ w.notes }}"
+              </div>
+            {% endif %}
+          </div>
+
+          <div style="display: flex; gap: 8px;">
+            <a href="{{ url_for('member_profile', member_id=w.member_id) }}" class="btn btn-secondary btn-sm">
+              <i class="fa-solid fa-id-badge"></i> View Profile
+            </a>
+            <form method="POST" action="{{ url_for('workouts_delete', log_id=w._id|string) }}" onsubmit="return confirmDelete('workout log');">
+              <button type="submit" class="btn btn-danger btn-sm" title="Delete Log">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Embedded Exercises Sub-table -->
+        <div class="table-responsive">
+          <table class="table" style="background: #f8fafc; font-size: 0.85rem;">
+            <thead>
+              <tr>
+                <th style="width: 40%;">Exercise Name</th>
+                <th>Sets</th>
+                <th>Reps</th>
+                <th>Weight Load (kg)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ex in w.exercises %}
+              <tr>
+                <td><strong>{{ ex.name }}</strong></td>
+                <td>{{ ex.sets }}</td>
+                <td>{{ ex.reps }}</td>
+                <td><span class="badge badge-amber">{{ ex.weight }} kg</span></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p style="color: var(--text-muted); padding: 20px 0;">No workout logs found.</p>
+  {% endif %}
+</div>
+{% endblock %}

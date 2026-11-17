@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}FitTrack - Gym Management System{% endblock %}</title>
+  
+  <!-- Inter Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome Icons via CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Chart.js via CDN for Progress Visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+  <!-- FitTrack Custom Styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-icon">
+          <i class="fa-solid fa-dumbbell"></i>
+        </div>
+        <div>
+          <div class="brand-title">FitTrack</div>
+          <div class="brand-subtitle">Gym Management DBMS</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Core Management</div>
+        <a href="{{ url_for('dashboard') }}" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">
+          <span class="icon"><i class="fa-solid fa-chart-pie"></i></span>
+          <span>Dashboard</span>
+        </a>
+
+        <div class="nav-section-title">SQL (Relational Core)</div>
+        <a href="{{ url_for('members_list') }}" class="nav-link {% if active_page == 'members' %}active{% endif %}">
+          <span class="icon"><i class="fa-solid fa-users"></i></span>
+          <span>Members</span>
+        </a>
+        <a href="{{ url_for('trainers_list') }}" class="nav-link {% if active_page == 'trainers' %}active{% endif %}">
+          <span class="icon"><i class="fa-solid fa-user-ninja"></i></span>
+          <span>Trainers</span>
+        </a>
+        <a href="{{ url_for('plans_list') }}" class="nav-link {% if active_page == 'plans' %}active{% endif %}">
+          <span class="icon"><i class="fa-solid fa-id-card"></i></span>
+          <span>Plans</span>
+        </a>
+        <a href="{{ url_for('classes_list') }}" class="nav-link {% if active_page == 'classes' %}active{% endif %}">
+          <span class="icon"><i class="fa-solid fa-calendar-days"></i></span>
+          <span>Classes</span>
+        </a>
+
+        <div class="nav-section-title">NoSQL (MongoDB Flexible)</div>
+        <a href="{{ url_for('workouts_list') }}" class="nav-link {% if active_page == 'workouts' %}active{% endif %}">
+          <span class="icon"><i class="fa-solid fa-fire"></i></span>
+          <span>Workout Logs</span>
+        </a>
+        <a href="{{ url_for('progress_list') }}" class="nav-link {% if active_page == 'progress' %}active{% endif %}">
+          <span class="icon"><i class="fa-solid fa-chart-line"></i></span>
+          <span>Progress Tracker</span>
+        </a>
+        <a href="{{ url_for('feedback_list') }}" class="nav-link {% if active_page == 'feedback' %}active{% endif %}">
+          <span class="icon"><i class="fa-solid fa-star"></i></span>
+          <span>Trainer Feedback</span>
+        </a>
+
+        <div class="nav-section-title">Analytics & Audit</div>
+        <a href="{{ url_for('reports') }}" class="nav-link {% if active_page == 'reports' %}active{% endif %}">
+          <span class="icon"><i class="fa-solid fa-file-invoice"></i></span>
+          <span>DBMS Reports</span>
+        </a>
+        <a href="{{ url_for('activity_logs') }}" class="nav-link {% if active_page == 'activity_logs' %}active{% endif %}">
+          <span class="icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
+          <span>Activity Audit</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div>FitTrack DBMS v1.0</div>
+        <small style="opacity: 0.7;">MySQL 8 + MongoDB 7</small>
+      </div>
+    </aside>
+
+    <!-- Main Wrapper -->
+    <div class="main-wrapper">
+      <!-- Top Navigation Bar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button id="sidebar-toggle" class="btn btn-secondary btn-sm" style="display: none;" title="Toggle Sidebar">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+        </div>
+
+        <div class="topbar-right">
+          <!-- Database Health Status Indicators -->
+          <div class="db-pill {% if db_status.mysql %}connected{% else %}disconnected{% endif %}" title="{{ db_status.mysql_msg }}">
+            <span class="status-dot"></span>
+            <span>MySQL</span>
+          </div>
+          <div class="db-pill {% if db_status.mongo %}connected{% else %}disconnected{% endif %}" title="{{ db_status.mongo_msg }}">
+            <span class="status-dot"></span>
+            <span>MongoDB</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Content Area -->
+      <main class="content-body">
+        <!-- DB Offline Warnings if applicable -->
+        {% if not db_status.mysql %}
+        <div class="alert alert-danger">
+          <div>
+            <strong><i class="fa-solid fa-triangle-exclamation"></i> MySQL Not Connected:</strong> 
+            {{ db_status.mysql_msg }}. Please check credentials in <code>.env</code> and ensure MySQL server is running.
+          </div>
+          <button class="alert-close">&times;</button>
+        </div>
+        {% endif %}
+
+        {% if not db_status.mongo %}
+        <div class="alert alert-warning">
+          <div>
+            <strong><i class="fa-solid fa-triangle-exclamation"></i> MongoDB Not Connected:</strong> 
+            {{ db_status.mongo_msg }}. Please ensure the MongoDB daemon (<code>mongod</code>) is running.
+          </div>
+          <button class="alert-close">&times;</button>
+        </div>
+        {% endif %}
+
+        <!-- Flash Messages Container -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}">
+                <span>{{ message }}</span>
+                <button class="alert-close">&times;</button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <!-- Child Page Content -->
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <!-- Custom Scripts -->
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

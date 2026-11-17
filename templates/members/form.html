@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit Member' if is_edit else 'Add New Member' }} - FitTrack{% endblock %}
+{% block page_title %}{{ 'Edit Member: ' ~ member.name if is_edit else 'Add New Member' }}{% endblock %}
+
+{% block content %}
+<div class="viva-box">
+  <div class="viva-box-title">
+    <i class="fa-solid fa-graduation-cap"></i> DBMS Viva Note: Data Validation & Referential Integrity
+  </div>
+  <p>
+    Form submissions undergo strict <strong>server-side validation</strong>: non-empty required fields, email format checking,
+    and a pre-check query against MySQL to prevent <code>Duplicate entry for key 'email'</code> errors.
+    The foreign keys (<code>plan_id</code>, <code>trainer_id</code>) reference existing primary keys in the parent tables,
+    demonstrating relational integrity constraints.
+  </p>
+</div>
+
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+  <div class="card-header-flex">
+    <h2 class="card-title">{{ 'Edit Member Details' if is_edit else 'New Member Registration' }}</h2>
+    <a href="{{ url_for('members_list') }}" class="btn btn-secondary btn-sm">
+      <i class="fa-solid fa-arrow-left"></i> Back to Members
+    </a>
+  </div>
+
+  <form method="POST" action="">
+    <div class="form-grid">
+      <!-- Full Name -->
+      <div class="form-group">
+        <label class="form-label" for="name">Full Name <span style="color: var(--danger-color);">*</span></label>
+        <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Rahul Sharma"
+               value="{{ form_data.name if form_data else (member.name if member else '') }}" required />
+      </div>
+
+      <!-- Email Address (Unique) -->
+      <div class="form-group">
+        <label class="form-label" for="email">Email Address (Must be Unique) <span style="color: var(--danger-color);">*</span></label>
+        <input type="email" id="email" name="email" class="form-control" placeholder="e.g. rahul@example.com"
+               value="{{ form_data.email if form_data else (member.email if member else '') }}" required />
+        <span class="form-hint">Enforced by MySQL UNIQUE constraint</span>
+      </div>
+
+      <!-- Contact Phone -->
+      <div class="form-group">
+        <label class="form-label" for="phone">Phone Number <span style="color: var(--danger-color);">*</span></label>
+        <input type="tel" id="phone" name="phone" class="form-control" placeholder="e.g. +91 98765 43210"
+               value="{{ form_data.phone if form_data else (member.phone if member else '') }}" required />
+      </div>
+
+      <!-- Join Date -->
+      <div class="form-group">
+        <label class="form-label" for="join_date">Membership Join Date <span style="color: var(--danger-color);">*</span></label>
+        <input type="date" id="join_date" name="join_date" class="form-control"
+               value="{{ form_data.join_date if form_data else (member.join_date if member else today_date) }}" required />
+      </div>
+
+      <!-- Membership Plan Dropdown (FK) -->
+      <div class="form-group">
+        <label class="form-label" for="plan_id">Membership Plan (FK &rarr; plans)</label>
+        <select id="plan_id" name="plan_id" class="form-control">
+          <option value="">-- Select Membership Plan (Optional) --</option>
+          {% for p in plans %}
+            <option value="{{ p.plan_id }}"
+              {% if (form_data and form_data.plan_id|string == p.plan_id|string) or (member and member.plan_id|string == p.plan_id|string) %}selected{% endif %}>
+              {{ p.plan_name }} ({{ p.duration_months }} mos - ₹{{ "%.2f"|format(p.price) }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Personal Trainer Dropdown (FK) -->
+      <div class="form-group">
+        <label class="form-label" for="trainer_id">Assigned Trainer (FK &rarr; trainers)</label>
+        <select id="trainer_id" name="trainer_id" class="form-control">
+          <option value="">-- Select Trainer (Optional) --</option>
+          {% for t in trainers %}
+            <option value="{{ t.trainer_id }}"
+              {% if (form_data and form_data.trainer_id|string == t.trainer_id|string) or (member and member.trainer_id|string == t.trainer_id|string) %}selected{% endif %}>
+              {{ t.name }} ({{ t.specialization }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px; border-top: 1px solid var(--border-light); padding-top: 20px;">
+      <a href="{{ url_for('members_list') }}" class="btn btn-secondary">Cancel</a>
+      <button type="submit" class="btn btn-primary">
+        <i class="fa-solid fa-floppy-disk"></i> {{ 'Update Member' if is_edit else 'Save Member' }}
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

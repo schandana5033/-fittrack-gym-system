@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Submit Feedback - FitTrack DBMS{% endblock %}
+{% block page_title %}Submit Trainer Feedback{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 650px; margin: 0 auto;">
+  <div class="card-header-flex">
+    <h2 class="card-title">Rate Your Trainer</h2>
+    <a href="{{ url_for('feedback_list') }}" class="btn btn-secondary btn-sm">
+      <i class="fa-solid fa-arrow-left"></i> Back to Feedback
+    </a>
+  </div>
+
+  <form method="POST" action="">
+    <div class="form-group">
+      <label class="form-label" for="member_id">Member (Reviewer) <span style="color: var(--danger-color);">*</span></label>
+      <select id="member_id" name="member_id" class="form-control" required>
+        <option value="">-- Select Member --</option>
+        {% for m in members %}
+          <option value="{{ m.member_id }}" {% if preselected_member_id|string == m.member_id|string %}selected{% endif %}>
+            {{ m.name }} (#{{ m.member_id }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="trainer_id">Trainer Being Reviewed <span style="color: var(--danger-color);">*</span></label>
+      <select id="trainer_id" name="trainer_id" class="form-control" required>
+        <option value="">-- Select Trainer --</option>
+        {% for t in trainers %}
+          <option value="{{ t.trainer_id }}">
+            {{ t.name }} ({{ t.specialization }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="rating">Rating (1 to 5 Stars) <span style="color: var(--danger-color);">*</span></label>
+      <select id="rating" name="rating" class="form-control" required>
+        <option value="5" selected>★★★★★ - 5 Stars (Exceptional Coaching)</option>
+        <option value="4">★★★★☆ - 4 Stars (Very Good Guidance)</option>
+        <option value="3">★★★☆☆ - 3 Stars (Satisfactory)</option>
+        <option value="2">★★☆☆☆ - 2 Stars (Needs Improvement)</option>
+        <option value="1">★☆☆☆☆ - 1 Star (Unsatisfactory)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="comment">Feedback & Review Comments <span style="color: var(--danger-color);">*</span></label>
+      <textarea id="comment" name="comment" class="form-control" rows="4" placeholder="Share your experience regarding workout intensity, form correction, discipline, and results..." required></textarea>
+    </div>
+
+    <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; border-top: 1px solid var(--border-light); padding-top: 20px;">
+      <a href="{{ url_for('feedback_list') }}" class="btn btn-secondary">Cancel</a>
+      <button type="submit" class="btn btn-primary">
+        <i class="fa-solid fa-paper-plane"></i> Submit Feedback
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

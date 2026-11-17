@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Progress Tracker - FitTrack DBMS{% endblock %}
+{% block page_title %}Member Fitness Progress{% endblock %}
+
+{% block content %}
+<div class="viva-box">
+  <div class="viva-box-title">
+    <i class="fa-solid fa-graduation-cap"></i> DBMS Viva Note: Sub-documents & Time-Series Analytics
+  </div>
+  <p>
+    Body composition check-ins are saved in the <code>progress</code> collection as:
+    <code>{"member_id": 1, "date": "2026-03-10", "weight_kg": 78.0, "body_fat_pct": 19.1, "measurements": {"chest": 41.0, "waist": 32.0, "arms": 14.5}}</code>.
+    The embedded <code>measurements</code> sub-document cleanly organizes anthropometric points without altering table columns.
+    The line chart visually maps weight progression over time using <strong>Chart.js</strong>.
+  </p>
+</div>
+
+<div class="card">
+  <div class="card-header-flex">
+    <div>
+      <h2 class="card-title">Fitness & Measurement Progress</h2>
+      <small style="color: var(--text-muted);">
+        {% if selected_member %}
+          Tracking progress for: <strong>{{ selected_member.name }}</strong>
+        {% else %}
+          Viewing all member check-ins
+        {% endif %}
+      </small>
+    </div>
+    <div style="display: flex; gap: 12px; align-items: center;">
+      <!-- Member Filter Dropdown -->
+      <form method="GET" action="{{ url_for('progress_list') }}" style="display: flex; gap: 8px;">
+        <select name="member_id" class="form-control" style="width: 220px; padding: 6px 10px;" onchange="this.form.submit()">
+          <option value="">-- All Members --</option>
+          {% for m in members %}
+            <option value="{{ m.member_id }}" {% if selected_member_id|string == m.member_id|string %}selected{% endif %}>
+              {{ m.name }}
+            </option>
+          {% endfor %}
+        </select>
+        {% if selected_member_id %}
+          <a href="{{ url_for('progress_list') }}" class="btn btn-secondary btn-sm" title="Clear Filter">&times;</a>
+        {% endif %}
+      </form>
+
+      <a href="{{ url_for('progress_add', member_id=selected_member_id or '') }}" class="btn btn-primary">
+        <i class="fa-solid fa-plus"></i> Add Measurement
+      </a>
+    </div>
+  </div>
+
+  <!-- Chart.js Visualization Card (if data exists) -->
+  {% if chart_data and chart_data.dates|length > 0 %}
+  <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 20px; margin-bottom: 24px;">
+    <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--navy-dark); margin-bottom: 12px;">
+      <i class="fa-solid fa-chart-line" style="color: var(--teal-primary);"></i>
+      Weight Over Time (kg) {% if selected_member %} - {{ selected_member.name }}{% endif %}
+    </h3>
+    <div style="height: 280px; width: 100%;">
+      <canvas id="progressChart"></canvas>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Progress Records Table -->
+  {% if progress_records %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Member</th>
+          <th>Weight</th>
+          <th>Body Fat %</th>
+          <th>Chest</th>
+          <th>Waist</th>
+          <th>Arms</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in progress_records %}
+        <tr>
+          <td><strong>{{ p.date }}</strong></td>
+          <td>
+            <a href="{{ url_for('member_profile', member_id=p.member_id) }}" style="text-decoration: none; color: var(--teal-primary); font-weight: 600;">
+              {{ p.member_name or ('Member #' ~ p.member_id) }}
+            </a>
+          </td>
+          <td><span class="badge badge-plan">{{ p.weight_kg }} kg</span></td>
+          <td>{{ p.body_fat_pct ~ '%' if p.body_fat_pct else '—' }}</td>
+          <td>{{ p.measurements.chest ~ ' in' if p.measurements and p.measurements.chest else '—' }}</td>
+          <td>{{ p.measurements.waist ~ ' in' if p.measurements and p.measurements.waist else '—' }}</td>
+          <td>{{ p.measurements.arms ~ ' in' if p.measurements and p.measurements.arms else '—' }}</td>
+          <td>
+            <div class="table-actions" style="justify-content: flex-end;">
+              <form method="POST" action="{{ url_for('progress_delete', progress_id=p._id|string) }}" style="display: inline;" onsubmit="return confirmDelete('progress record');">
+                <button type="submit" class="btn btn-danger btn-sm" title="Delete Entry">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color: var(--text-muted); padding: 20px 0;">No progress measurements found.</p>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if chart_data %}
+<script>
+  window.progressChartData = {{ chart_data|tojson }};
+</script>
+{% endif %}
+{% endblock %}

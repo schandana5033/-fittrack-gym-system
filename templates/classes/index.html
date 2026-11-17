@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Group Classes - FitTrack DBMS{% endblock %}
+{% block page_title %}Group Fitness Classes{% endblock %}
+
+{% block content %}
+<div class="viva-box">
+  <div class="viva-box-title">
+    <i class="fa-solid fa-graduation-cap"></i> DBMS Viva Note: Foreign Key Relationship & Schedule Management
+  </div>
+  <p>
+    Classes are modeled as an entity linked to the <code>trainers</code> table:
+    <code>SELECT c.*, t.name AS trainer_name, t.specialization FROM classes c LEFT JOIN trainers t ON c.trainer_id = t.trainer_id ORDER BY c.class_id ASC</code>.
+    This illustrates a <strong>One-to-Many relationship</strong>: one trainer can lead multiple group classes.
+  </p>
+</div>
+
+<div class="card">
+  <div class="card-header-flex">
+    <div>
+      <h2 class="card-title">Weekly Fitness Schedule</h2>
+      <small style="color: var(--text-muted);">Manage workout sessions and assigned instructors</small>
+    </div>
+    <a href="{{ url_for('classes_add') }}" class="btn btn-primary">
+      <i class="fa-solid fa-plus"></i> Add New Class
+    </a>
+  </div>
+
+  {% if classes %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Class Name</th>
+          <th>Schedule Time</th>
+          <th>Assigned Instructor</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in classes %}
+        <tr>
+          <td><strong>#{{ c.class_id }}</strong></td>
+          <td>
+            <strong>{{ c.class_name }}</strong>
+          </td>
+          <td>
+            <span style="display: inline-flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-clock" style="color: var(--amber-primary);"></i> {{ c.schedule_time }}
+            </span>
+          </td>
+          <td>
+            {% if c.trainer_name %}
+              <span class="badge badge-trainer">{{ c.trainer_name }}</span>
+            {% else %}
+              <span style="color: var(--text-muted); font-size: 0.8rem;">Unassigned</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="table-actions" style="justify-content: flex-end;">
+              <a href="{{ url_for('classes_edit', class_id=c.class_id) }}" class="btn btn-secondary btn-sm" title="Edit Class">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </a>
+              <form method="POST" action="{{ url_for('classes_delete', class_id=c.class_id) }}" style="display: inline;" onsubmit="return confirmDelete('class: {{ c.class_name }}');">
+                <button type="submit" class="btn btn-danger btn-sm" title="Delete Class">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color: var(--text-muted); padding: 20px 0;">No classes scheduled yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

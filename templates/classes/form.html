@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit Class' if is_edit else 'Add New Class' }} - FitTrack{% endblock %}
+{% block page_title %}{{ 'Edit Class: ' ~ gym_class.class_name if is_edit else 'Schedule New Class' }}{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 650px; margin: 0 auto;">
+  <div class="card-header-flex">
+    <h2 class="card-title">{{ 'Edit Class Schedule' if is_edit else 'Schedule Fitness Class' }}</h2>
+    <a href="{{ url_for('classes_list') }}" class="btn btn-secondary btn-sm">
+      <i class="fa-solid fa-arrow-left"></i> Back to Classes
+    </a>
+  </div>
+
+  <form method="POST" action="">
+    <div class="form-group">
+      <label class="form-label" for="class_name">Class Name <span style="color: var(--danger-color);">*</span></label>
+      <input type="text" id="class_name" name="class_name" class="form-control" placeholder="e.g. High-Intensity CrossFit, Morning Flow Yoga"
+             value="{{ form_data.class_name if form_data else (gym_class.class_name if gym_class else '') }}" required />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="schedule_time">Schedule Time / Days <span style="color: var(--danger-color);">*</span></label>
+      <input type="text" id="schedule_time" name="schedule_time" class="form-control" placeholder="e.g. Mon & Wed 07:00 AM - 08:00 AM"
+             value="{{ form_data.schedule_time if form_data else (gym_class.schedule_time if gym_class else '') }}" required />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="trainer_id">Lead Instructor (FK &rarr; trainers)</label>
+      <select id="trainer_id" name="trainer_id" class="form-control">
+        <option value="">-- Select Instructor (Optional) --</option>
+        {% for t in trainers %}
+          <option value="{{ t.trainer_id }}"
+            {% if (form_data and form_data.trainer_id|string == t.trainer_id|string) or (gym_class and gym_class.trainer_id|string == t.trainer_id|string) %}selected{% endif %}>
+            {{ t.name }} ({{ t.specialization }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; border-top: 1px solid var(--border-light); padding-top: 20px;">
+      <a href="{{ url_for('classes_list') }}" class="btn btn-secondary">Cancel</a>
+      <button type="submit" class="btn btn-primary">
+        <i class="fa-solid fa-floppy-disk"></i> {{ 'Update Class' if is_edit else 'Save Class' }}
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

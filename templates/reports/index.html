@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}DBMS Reports - FitTrack{% endblock %}
+{% block page_title %}DBMS Analytics & Reports{% endblock %}
+
+{% block content %}
+<div class="viva-box">
+  <div class="viva-box-title">
+    <i class="fa-solid fa-graduation-cap"></i> DBMS Viva Note: Advanced SQL Joins, Group By & Hybrid Queries
+  </div>
+  <p>
+    This reporting module showcases key database querying concepts:
+    <br><strong>1. Multi-Table Relational JOIN:</strong> <code>INNER/LEFT JOIN</code> combining normalized entities (Members, Plans, Trainers).
+    <br><strong>2. Aggregation with GROUP BY:</strong> <code>COUNT(m.member_id)</code> and <code>SUM(p.price)</code> to calculate revenue per plan.
+    <br><strong>3. Polyglot Hybrid Reporting:</strong> Merging relational SQL metrics (assigned members, scheduled classes) with NoSQL MongoDB metrics (reviews and ratings).
+  </p>
+</div>
+
+<!-- ========================================================================= -->
+<!-- REPORT 1: SQL Multi-Table JOIN -->
+<!-- ========================================================================= -->
+<div class="card">
+  <div class="card-header-flex">
+    <div>
+      <h2 class="card-title">
+        <i class="fa-solid fa-table-cells" style="color: var(--teal-primary);"></i> Report 1: Comprehensive Member Enrollment (SQL JOIN)
+      </h2>
+      <small style="color: var(--text-muted);">
+        Query: <code>SELECT m.*, p.plan_name, p.price, t.name AS trainer_name FROM members m LEFT JOIN plans p ... LEFT JOIN trainers t ...</code>
+      </small>
+    </div>
+  </div>
+
+  {% if join_report %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Member ID</th>
+          <th>Member Name</th>
+          <th>Email</th>
+          <th>Join Date</th>
+          <th>Enrolled Plan</th>
+          <th>Plan Price</th>
+          <th>Assigned Trainer</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in join_report %}
+        <tr>
+          <td><strong>#{{ row.member_id }}</strong></td>
+          <td><strong>{{ row.name }}</strong></td>
+          <td>{{ row.email }}</td>
+          <td>{{ row.join_date }}</td>
+          <td>
+            <span class="badge badge-plan">{{ row.plan_name or 'Unsubscribed' }}</span>
+          </td>
+          <td>
+            {% if row.price %}
+              <strong style="color: var(--teal-primary);">₹{{ "%.2f"|format(row.price) }}</strong>
+            {% else %}
+              <span style="color: var(--text-muted);">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge badge-trainer">{{ row.trainer_name or 'Unassigned' }}</span>
+          </td>
+          <td>
+            <a href="{{ url_for('member_profile', member_id=row.member_id) }}" class="btn btn-secondary btn-sm">
+              <i class="fa-solid fa-id-badge"></i> Hybrid Profile
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color: var(--text-muted);">No records found in database.</p>
+  {% endif %}
+</div>
+
+<!-- ========================================================================= -->
+<!-- REPORT 2: SQL COUNT + GROUP BY (Plan Distribution & Revenue) -->
+<!-- ========================================================================= -->
+<div class="card">
+  <div class="card-header-flex">
+    <div>
+      <h2 class="card-title">
+        <i class="fa-solid fa-chart-column" style="color: var(--amber-primary);"></i> Report 2: Membership Distribution & Revenue (SQL GROUP BY)
+      </h2>
+      <small style="color: var(--text-muted);">
+        Query: <code>SELECT p.plan_name, COUNT(m.member_id) AS total_enrolled, (COUNT(m.member_id) * p.price) AS total_revenue FROM plans p LEFT JOIN members m GROUP BY p.plan_id</code>
+      </small>
+    </div>
+  </div>
+
+  {% if group_report %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Plan Name</th>
+          <th>Duration</th>
+          <th>Unit Price</th>
+          <th>Enrolled Members</th>
+          <th>Total Revenue (₹)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for grp in group_report %}
+        <tr>
+          <td><strong>{{ grp.plan_name }}</strong></td>
+          <td>{{ grp.duration_months }} month{{ 's' if grp.duration_months > 1 else '' }}</td>
+          <td>₹{{ "%.2f"|format(grp.price) }}</td>
+          <td><span class="badge badge-plan">{{ grp.total_enrolled }} member{{ 's' if grp.total_enrolled != 1 else '' }}</span></td>
+          <td>
+            <strong style="color: #065f46; font-size: 0.95rem;">
+              ₹{{ "%.2f"|format(grp.total_revenue or 0) }}
+            </strong>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color: var(--text-muted);">No plan distribution data available.</p>
+  {% endif %}
+</div>
+
+<!-- ========================================================================= -->
+<!-- REPORT 3: Hybrid SQL + MongoDB Trainer Performance Synthesis -->
+<!-- ========================================================================= -->
+<div class="card">
+  <div class="card-header-flex">
+    <div>
+      <h2 class="card-title">
+        <i class="fa-solid fa-shuffle" style="color: var(--teal-primary);"></i> Report 3: Hybrid Trainer Performance (SQL + MongoDB)
+      </h2>
+      <small style="color: var(--text-muted);">
+        Combines SQL relational metrics (members, classes) with MongoDB NoSQL metrics (review count, average star rating)
+      </small>
+    </div>
+  </div>
+
+  {% if trainer_performance %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Trainer</th>
+          <th>Specialization</th>
+          <th>Assigned Members (SQL)</th>
+          <th>Classes Led (SQL)</th>
+          <th>Average Rating (MongoDB)</th>
+          <th>Review Count (MongoDB)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tp in trainer_performance %}
+        <tr>
+          <td><strong>{{ tp.name }}</strong></td>
+          <td><span class="badge badge-trainer">{{ tp.specialization }}</span></td>
+          <td><span class="badge badge-plan">{{ tp.assigned_members }} active</span></td>
+          <td>{{ tp.classes_count }} scheduled</td>
+          <td>
+            {% if tp.avg_rating %}
+              <span class="star-rating">★</span>
+              <strong>{{ "%.1f"|format(tp.avg_rating) }}</strong> / 5.0
+            {% else %}
+              <span style="color: var(--text-muted); font-size: 0.8rem;">No ratings yet</span>
+            {% endif %}
+          </td>
+          <td>
+            {{ tp.review_count }} review{{ 's' if tp.review_count != 1 else '' }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color: var(--text-muted);">No trainer data available.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Trainers - FitTrack DBMS{% endblock %}
+{% block page_title %}Trainer Management{% endblock %}
+
+{% block content %}
+<div class="viva-box">
+  <div class="viva-box-title">
+    <i class="fa-solid fa-graduation-cap"></i> DBMS Viva Note: Foreign Key Constraints & Hybrid Ratings
+  </div>
+  <p>
+    Trainers serve as parent records referenced by both <code>members.trainer_id</code> and <code>classes.trainer_id</code>.
+    The schema defines <code>ON DELETE SET NULL</code>, meaning deleting a trainer cleanly unlinks members without cascading deletion of their accounts.
+    The average rating column integrates real-time ratings calculated via MongoDB's aggregation pipeline!
+  </p>
+</div>
+
+<div class="card">
+  <div class="card-header-flex">
+    <div>
+      <h2 class="card-title">Fitness Instructors & Trainers</h2>
+      <small style="color: var(--text-muted);">Manage gym staff, specializations, and feedback performance</small>
+    </div>
+    <a href="{{ url_for('trainers_add') }}" class="btn btn-primary">
+      <i class="fa-solid fa-plus"></i> Add New Trainer
+    </a>
+  </div>
+
+  {% if trainers %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Trainer Name</th>
+          <th>Specialization</th>
+          <th>Phone</th>
+          <th>Assigned Members</th>
+          <th>Avg Rating (NoSQL)</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in trainers %}
+        <tr>
+          <td><strong>#{{ t.trainer_id }}</strong></td>
+          <td>
+            <strong>{{ t.name }}</strong>
+          </td>
+          <td><span class="badge badge-trainer">{{ t.specialization }}</span></td>
+          <td>{{ t.phone }}</td>
+          <td>
+            <span class="badge badge-plan">{{ t.member_count or 0 }} members</span>
+          </td>
+          <td>
+            {% if t.avg_rating %}
+              <span class="star-rating" style="font-size: 0.95rem;">★</span>
+              <strong>{{ "%.1f"|format(t.avg_rating) }}</strong> 
+              <span style="font-size: 0.75rem; color: var(--text-muted);">({{ t.review_count }} reviews)</span>
+            {% else %}
+              <span style="color: var(--text-muted); font-size: 0.8rem;">No reviews yet</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="table-actions" style="justify-content: flex-end;">
+              <a href="{{ url_for('trainers_edit', trainer_id=t.trainer_id) }}" class="btn btn-secondary btn-sm" title="Edit Trainer">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </a>
+              <form method="POST" action="{{ url_for('trainers_delete', trainer_id=t.trainer_id) }}" style="display: inline;" onsubmit="return confirmDelete('trainer: {{ t.name }}');">
+                <button type="submit" class="btn btn-danger btn-sm" title="Delete Trainer">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color: var(--text-muted); padding: 20px 0;">No trainers registered yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

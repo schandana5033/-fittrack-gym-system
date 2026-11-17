@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Activity Logs - FitTrack DBMS{% endblock %}
+{% block page_title %}MongoDB Activity Audit Logs{% endblock %}
+
+{% block content %}
+<div class="viva-box">
+  <div class="viva-box-title">
+    <i class="fa-solid fa-graduation-cap"></i> DBMS Viva Note: High-Throughput Event Sourcing in NoSQL
+  </div>
+  <p>
+    Audit and activity logging produces large volumes of append-only records with varying metadata.
+    MongoDB is ideally suited for this due to fast document writes (<code>insert_one</code>) and flexible schema.
+    Every CRUD operation across members, trainers, plans, classes, workouts, progress, and feedback triggers an automatic audit entry.
+  </p>
+</div>
+
+<div class="card">
+  <div class="card-header-flex">
+    <div>
+      <h2 class="card-title">System Audit Log History</h2>
+      <small style="color: var(--text-muted);">
+        Collection: <code>fittrack_nosql.activity_logs</code> &bull; Showing latest {{ logs|length }} operations
+      </small>
+    </div>
+    <!-- Module Filter -->
+    <form method="GET" action="{{ url_for('activity_logs') }}" style="display: flex; gap: 8px;">
+      <select name="module" class="form-control" style="width: 180px; padding: 6px 10px;" onchange="this.form.submit()">
+        <option value="">-- All Modules --</option>
+        {% for mod in ['Members', 'Trainers', 'Plans', 'Classes', 'Workouts', 'Progress', 'Feedback', 'System'] %}
+          <option value="{{ mod }}" {% if selected_module == mod %}selected{% endif %}>{{ mod }}</option>
+        {% endfor %}
+      </select>
+      {% if selected_module %}
+        <a href="{{ url_for('activity_logs') }}" class="btn btn-secondary btn-sm" title="Clear Filter">&times;</a>
+      {% endif %}
+    </form>
+  </div>
+
+  {% if logs %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Action</th>
+          <th>Module</th>
+          <th>Timestamp</th>
+          <th>Audit Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for l in logs %}
+        <tr>
+          <td>
+            {% if l.action == 'CREATE' %}
+              <span class="badge badge-create"><i class="fa-solid fa-plus-circle"></i> CREATE</span>
+            {% elif l.action == 'UPDATE' %}
+              <span class="badge badge-update"><i class="fa-solid fa-pen-circle"></i> UPDATE</span>
+            {% elif l.action == 'DELETE' %}
+              <span class="badge badge-delete"><i class="fa-solid fa-trash-can"></i> DELETE</span>
+            {% else %}
+              <span class="badge badge-plan">{{ l.action }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <strong>{{ l.module }}</strong>
+          </td>
+          <td style="font-size: 0.82rem; color: var(--text-muted); white-space: nowrap;">
+            {{ l.timestamp.strftime('%Y-%m-%d %H:%M:%S') if l.timestamp else 'N/A' }}
+          </td>
+          <td style="color: #334155; font-size: 0.88rem;">
+            {{ l.details }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color: var(--text-muted); padding: 20px 0;">No activity log records found.</p>
+  {% endif %}
+</div>
+{% endblock %}
